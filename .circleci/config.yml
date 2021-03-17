@@ -1,0 +1,74 @@
+import cv2
+import numpy as np
+import os
+
+# 分割视频
+# flag = 1
+flag = 0
+if flag:
+    # 载入视频
+    Videofile = "E:\\result\\other\\1.15_0.875.mp4"
+    savefile = "E:\\result\\other\\pic"
+    cap = cv2.VideoCapture(Videofile)
+    # 每隔24帧保存一张图片
+    frame_interval = 24
+    # 统计当前帧
+    frame_count = 1
+    while(True):
+        ret, frame = cap.read()
+        if frame_count % frame_interval == 0:
+            cv2.imwrite("{}/{}.jpg".format(savefile, frame_count), frame)
+
+        frame_count += 1
+
+# 取点
+flag = 1
+# flag = 0
+if flag:
+    img_path = "E:\\result\\other\\1272.jpg"
+    img = cv2.imread(img_path)
+    img_name = os.path.basename(img_path)
+
+
+    arr = []
+    def on_EVENT_LBUTTONDOWN(event, x, y, flags, param):
+        if event == cv2.EVENT_LBUTTONDOWN:
+            xy = "%d,%d" % (x, y)
+            arr.append([x, y])
+            cv2.circle(img, (x, y), 1, (0, 0, 255), thickness=-1)
+            cv2.putText(img, xy, (x, y), cv2.FONT_HERSHEY_PLAIN,
+                        1.0, (0, 0, 0), thickness=1)
+            cv2.imshow("image", img)
+            print(x, y)
+
+
+    cv2.namedWindow("image")
+    cv2.setMouseCallback("image", on_EVENT_LBUTTONDOWN)
+    cv2.imshow("image", img)
+    cv2.waitKey(0)
+    P1 = arr[0]
+    P2 = arr[1]
+    P3 = arr[2]
+    P4 = arr[3]
+    print(P1, P2, P3, P4)
+
+    L = 600
+    W = 600
+    # 输入梯形的四个顶点
+    srcPoints = np.vstack((P1, P2, P3, P4))
+    srcPoints = np.float32(srcPoints)
+    # 目标的像素值大小
+    long = L * 96 / 2.54  # 72为分辨率,30及21是目标的实际尺寸，可用户输入.2.54为英寸的换算
+    short = W * 96 / 2.54
+    # 设置目标画布的大小
+    canvasPoints = np.array([[0, 0], [int(long), 0], [0, int(short)], [int(long), int(short)]])
+    canvasPoints = np.float32(canvasPoints)
+    # 计算转换矩阵
+    perspectiveMatrix = cv2.getPerspectiveTransform(srcPoints, canvasPoints)
+    # 完成透视变换
+    perspectiveImg = cv2.warpPerspective(img.copy(), perspectiveMatrix, (int(long), int(short)))
+    print("开始校正")
+    cv2.namedWindow("perspectiveImg", cv2.cv2.WINDOW_FREERATIO)
+    cv2.imshow("perspectiveImg", perspectiveImg)
+    cv2.waitKey(0)
+    cv2.imwrite("{}/{}_transform.jpg".format("E:\\result\\other", img_name[:-4]), perspectiveImg)
